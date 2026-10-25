@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASCII Table</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --muted: #6b6b6b;
+      --border: #dddddd;
+      --stripe: #f6f6f6;
+      --accent: #0b6bcb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161616;
+        --fg: #e8e8e8;
+        --muted: #9a9a9a;
+        --border: #333333;
+        --stripe: #1f1f1f;
+        --accent: #6cb0ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, sans-serif;
+    }
+    h1 { margin: 0 0 16px; font-size: 1.5rem; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    .controls { display: flex; gap: 20px; align-items: center; }
+    .controls label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      font-family: system-ui, sans-serif;
+    }
+    tbody tr:nth-child(odd) { background: var(--stripe); }
+    tr.group th {
+      position: static;
+      padding: 20px 10px 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--border);
+    }
+    td.char { color: var(--accent); font-weight: 600; }
+    td.ctrl { color: var(--muted); }
+
+    /* Optional columns are hidden unless their checkbox is on */
+    .oct, .bin { display: none; }
+    body.show-oct .oct, body.show-bin .bin { display: table-cell; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ASCII Table</h1>
+    <div class="controls">
+      <label><input type="checkbox" data-col="oct"> Octal</label>
+      <label><input type="checkbox" data-col="bin"> Binary</label>
+    </div>
+
+    <table id="ascii">
+      <thead>
+        <tr><th>Dec</th><th>Hex</th><th class="oct">Oct</th><th class="bin">Binary</th><th>Char</th></tr>
+      </thead>
+    </table>
+  </div>
+
+  <script>
+    const CONTROL = [
+      "NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
+      "BS",  "TAB", "LF",  "VT",  "FF",  "CR",  "SO",  "SI",
+      "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
+      "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US"
+    ];
+
+    function cell(text, className) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      if (className) td.className = className;
+      return td;
+    }
+
+    function addRow(tbody, i) {
+      const isCtrl = i < 32 || i === 127;
+      const char = i < 32 ? CONTROL[i] : i === 32 ? "SPACE" : i === 127 ? "DEL" : String.fromCharCode(i);
+      const tr = document.createElement("tr");
+      tr.append(
+        cell(i),
+        cell("0x" + i.toString(16).toUpperCase().padStart(2, "0")),
+        cell(i.toString(8).padStart(3, "0"), "oct"),
+        cell(i.toString(2).padStart(8, "0"), "bin"),
+        cell(char, isCtrl || i === 32 ? "ctrl" : "char")
+      );
+      tbody.appendChild(tr);
+    }
+
+    // Contiguous 0–127, grouped into labelled sections where the kind changes
+    const GROUPS = [
+      { label: "Control characters", from: 0, to: 31 },
+      { label: "Printable characters", from: 32, to: 126 },
+      { label: "Control character", from: 127, to: 127 },
+    ];
+
+    const table = document.getElementById("ascii");
+    for (const group of GROUPS) {
+      const tbody = document.createElement("tbody");
+      const heading = document.createElement("tr");
+      heading.className = "group";
+      const th = document.createElement("th");
+      th.colSpan = 5;
+      th.textContent = group.from === group.to
+        ? `${group.label} (${group.from})`
+        : `${group.label} (${group.from}–${group.to})`;
+      heading.appendChild(th);
+      tbody.appendChild(heading);
+      for (let i = group.from; i <= group.to; i++) addRow(tbody, i);
+      table.appendChild(tbody);
+    }
+
+    for (const box of document.querySelectorAll(".controls input")) {
+      box.addEventListener("change", () => {
+        document.body.classList.toggle("show-" + box.dataset.col, box.checked);
+      });
+    }
+  </script>
+</body>
+</html>
